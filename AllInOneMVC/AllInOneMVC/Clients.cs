@@ -10,6 +10,7 @@ namespace AllInOneMVC {
                     Enabled = true,
                     ClientName = "MVC Client",
                     ClientId = "mvc",
+                    RequireConsent = false,
                     Flow = Flows.Implicit,
 
                     RedirectUris = new List<string> {

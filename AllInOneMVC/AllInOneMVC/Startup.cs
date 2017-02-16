@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IdentityModel.Tokens;
 using System.Security.Claims;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Web.Helpers;
-
-using IdentityServer.WindowsAuthentication.Configuration;
 
 using IdentityServer3.Core;
 using IdentityServer3.Core.Configuration;
@@ -28,8 +24,6 @@ namespace AllInOneMVC {
         public void Configuration(IAppBuilder app) {
             AntiForgeryConfig.UniqueClaimTypeIdentifier = Constants.ClaimTypes.Subject;
             JwtSecurityTokenHandler.InboundClaimTypeMap = new Dictionary<string, string>();
-
-            app.Map("/windows", this.ConfigureWindowsTokenProvider);
 
             var factory = new IdentityServerServiceFactory()
                 // .UseInMemoryUsers(Users.Get())
@@ -140,23 +134,10 @@ namespace AllInOneMVC {
                 Caption = "Windows",
                 SignInAsAuthenticationType = signInAsType,
 
-                MetadataAddress = "https://localhost:44319/windows",
+                MetadataAddress = "https://localhost:44366",
                 Wtrealm = "urn:idsrv3"
             };
             app.UseWsFederationAuthentication(wsFederation);
-        }
-
-        X509Certificate2 LoadCertificate() {
-            return new X509Certificate2($@"{AppDomain.CurrentDomain.BaseDirectory}\bin\IdentityServer.pfx", "IdentityServer");
-        }
-
-        private void ConfigureWindowsTokenProvider(IAppBuilder app) {
-            app.UseWindowsAuthenticationService(new WindowsAuthenticationOptions {
-                IdpRealm = "urn:idsrv3",
-                IdpReplyUrl = "https://localhost:44319/identity",
-                SigningCertificate = Certificate.Get(),
-                EmitGroups = true
-            });
         }
     }
 }

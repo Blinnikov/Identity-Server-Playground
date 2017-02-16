@@ -13,6 +13,8 @@ using IdentityServer3.Core.Configuration;
 using IdentityServer3.Core.Services;
 using IdentityServer3.Core.Services.InMemory;
 
+using IdSrv.Shared;
+
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.Google;
@@ -42,12 +44,12 @@ namespace AllInOneMVC {
             var identityServerOptions = new IdentityServerOptions {
                 // RequireSsl = false,
                 SiteName = "Embedded IdentityServer",
-                SigningCertificate = this.LoadCertificate(),
+                SigningCertificate = Certificate.Get(),
 
                 Factory = factory,
 
-                AuthenticationOptions = new IdentityServer3.Core.Configuration.AuthenticationOptions {
-                    EnableLocalLogin = false,
+                AuthenticationOptions = new AuthenticationOptions {
+                    // EnableLocalLogin = false,
                     
                     EnablePostSignOutAutoRedirect = true,
                     IdentityProviders = this.ConfigureIdentityProviders
@@ -152,7 +154,7 @@ namespace AllInOneMVC {
             app.UseWindowsAuthenticationService(new WindowsAuthenticationOptions {
                 IdpRealm = "urn:idsrv3",
                 IdpReplyUrl = "https://localhost:44319/identity",
-                SigningCertificate = this.LoadCertificate(),
+                SigningCertificate = Certificate.Get(),
                 EmitGroups = true
             });
         }

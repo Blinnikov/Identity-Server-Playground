@@ -192,6 +192,7 @@
     <Compile Include="Scopes.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="Users.cs" />
+    <Compile Include="UserService.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap.css" />

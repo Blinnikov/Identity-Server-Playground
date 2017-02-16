@@ -8,14 +8,12 @@ using System.Web.Helpers;
 
 using IdentityServer.WindowsAuthentication.Configuration;
 
-// using IdentityServer.WindowsAuthentication.Configuration;
-
 using IdentityServer3.Core;
 using IdentityServer3.Core.Configuration;
-using IdentityServer3.Core.Models;
+using IdentityServer3.Core.Services;
+using IdentityServer3.Core.Services.InMemory;
 
 using Microsoft.IdentityModel.Protocols;
-using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.Google;
 using Microsoft.Owin.Security.OpenIdConnect;
@@ -31,22 +29,33 @@ namespace AllInOneMVC {
 
             app.Map("/windows", this.ConfigureWindowsTokenProvider);
 
+            var factory = new IdentityServerServiceFactory()
+                // .UseInMemoryUsers(Users.Get())
+                .UseInMemoryClients(Clients.Get())
+                .UseInMemoryScopes(Scopes.Get());
+
+            // factory.UserService = new Registration<IUserService>(context => new UserService(Users.Get()));
+
+            factory.Register(new Registration<List<InMemoryUser>>(Users.Get()));
+            factory.UserService = new Registration<IUserService, UserService>();
+
+            var identityServerOptions = new IdentityServerOptions {
+                // RequireSsl = false,
+                SiteName = "Embedded IdentityServer",
+                SigningCertificate = this.LoadCertificate(),
+
+                Factory = factory,
+
+                AuthenticationOptions = new IdentityServer3.Core.Configuration.AuthenticationOptions {
+                    EnableLocalLogin = false,
+                    
+                    EnablePostSignOutAutoRedirect = true,
+                    IdentityProviders = this.ConfigureIdentityProviders
+                }
+            };
+
             app.Map("/identity", idsrvApp => {
-                idsrvApp.UseIdentityServer(new IdentityServerOptions {
-                    // RequireSsl = false,
-                    SiteName = "Embedded IdentityServer",
-                    SigningCertificate = this.LoadCertificate(),
-
-                    Factory = new IdentityServerServiceFactory()
-                                .UseInMemoryUsers(Users.Get())
-                                .UseInMemoryClients(Clients.Get())
-                                .UseInMemoryScopes(Scopes.Get()),
-
-                    AuthenticationOptions = new IdentityServer3.Core.Configuration.AuthenticationOptions {
-                        EnablePostSignOutAutoRedirect = true,
-                        IdentityProviders = this.ConfigureIdentityProviders
-                    }
-                });
+                idsrvApp.UseIdentityServer(identityServerOptions);
             });
 
             app.UseResourceAuthorization(new AuthorizationManager());
@@ -82,19 +91,19 @@ namespace AllInOneMVC {
                             Constants.ClaimTypes.GivenName,
                             Constants.ClaimTypes.Role);
 
-                        nid.AddClaim(givenName);
-                        nid.AddClaim(familyName);
-                        nid.AddClaim(sub);
-                        nid.AddClaims(roles);
+                        //nid.AddClaim(givenName);
+                        //nid.AddClaim(familyName);
+                        //nid.AddClaim(sub);
+                        //nid.AddClaims(roles);
 
                         // add some other app specific claim
                         nid.AddClaim(new Claim("app_specific", "some data"));
 
                         nid.AddClaim(new Claim("id_token", n.ProtocolMessage.IdToken));
 
-                        n.AuthenticationTicket = new AuthenticationTicket(
-                            nid,
-                            n.AuthenticationTicket.Properties);
+                        //n.AuthenticationTicket = new AuthenticationTicket(
+                        //    nid,
+                        //    n.AuthenticationTicket.Properties);
 
                         return Task.FromResult(0);
                     },
@@ -124,15 +133,15 @@ namespace AllInOneMVC {
                 ClientSecret = "2SZ8dGRyuyT6qykVoD-mFeVE"
             });
 
-            //var wsFederation = new WsFederationAuthenticationOptions {
-            //    AuthenticationType = "windows",
-            //    Caption = "Windows",
-            //    SignInAsAuthenticationType = signInAsType,
+            var wsFederation = new WsFederationAuthenticationOptions {
+                AuthenticationType = "windows",
+                Caption = "Windows",
+                SignInAsAuthenticationType = signInAsType,
 
-            //    MetadataAddress = "https://localhost:44319/windows",
-            //    Wtrealm = "urn:idsrv3"
-            //};
-            //app.UseWsFederationAuthentication(wsFederation);
+                MetadataAddress = "https://localhost:44319/windows",
+                Wtrealm = "urn:idsrv3"
+            };
+            app.UseWsFederationAuthentication(wsFederation);
         }
 
         X509Certificate2 LoadCertificate() {
@@ -141,9 +150,10 @@ namespace AllInOneMVC {
 
         private void ConfigureWindowsTokenProvider(IAppBuilder app) {
             app.UseWindowsAuthenticationService(new WindowsAuthenticationOptions {
-                IdpReplyUrl = "http://localhost:44319/was",
+                IdpRealm = "urn:idsrv3",
+                IdpReplyUrl = "https://localhost:44319/identity",
                 SigningCertificate = this.LoadCertificate(),
-                EnableOAuth2Endpoint = false
+                EmitGroups = true
             });
         }
     }
